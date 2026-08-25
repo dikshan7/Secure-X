@@ -1,0 +1,341 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Network Vulnerability Report</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; padding: 30px; }
+        .container { max-width: 1050px; margin: 0 auto; background: #1e293b; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h1 { color: #38bdf8; border-bottom: 2px solid #334155; padding-bottom: 10px; margin-top: 0; }
+        .meta-info { margin-bottom: 20px; color: #94a3b8; font-size: 0.95em; }
+        
+        .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .metric-card { background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; text-align: center; }
+        .metric-value { font-size: 1.8em; font-weight: bold; margin-top: 5px; }
+        .color-hosts { color: #38bdf8; }
+        .color-critical { color: #ef4444; }
+        .color-high { color: #f97316; }
+        .color-medium { color: #eab308; }
+
+        .controls { display: flex; gap: 12px; margin-bottom: 25px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; align-items: center; flex-wrap: wrap; }
+        .controls input, .controls select { background: #1e293b; color: #f8fafc; border: 1px solid #475569; padding: 8px 12px; border-radius: 6px; font-size: 0.95em; outline: none; }
+        .controls input { flex-grow: 1; min-width: 200px; }
+        .controls input:focus, .controls select:focus { border-color: #38bdf8; }
+
+        .host-card { background: #0f172a; border-radius: 8px; padding: 15px; margin-bottom: 20px; border: 1px solid #334155; }
+        .host-header { font-size: 1.2em; font-weight: bold; color: #f1f5f9; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #334155; vertical-align: middle; }
+        th { background-color: #334155; color: #f8fafc; font-size: 0.9em; }
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8em; display: inline-block; }
+        .badge-CRITICAL { background-color: #ef4444; color: #ffffff; }
+        .badge-HIGH { background-color: #f97316; color: #ffffff; }
+        .badge-MEDIUM { background-color: #eab308; color: #000000; }
+        .badge-LOW { background-color: #3b82f6; color: #ffffff; }
+        .badge-INFO { background-color: #64748b; color: #ffffff; }
+
+        .impact-tag { background: #334155; color: #38bdf8; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; margin-bottom: 4px; display: inline-block; }
+
+        @media print {
+            .controls, .btn-export { display: none !important; }
+            body { background-color: #ffffff !important; color: #000000 !important; padding: 0 !important; }
+            .container, .host-card, .metric-card { background: #ffffff !important; color: #000000 !important; border: 1px solid #ccc !important; box-shadow: none !important; }
+            h1, .host-header { color: #000000 !important; }
+            th { background-color: #f1f5f9 !important; color: #000000 !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Network Vulnerability Assessment</h1>
+        <div class="meta-info">
+            <p><strong>Target Range:</strong> 192.168.122.150 | <strong>Scan Date:</strong> 2026-08-21 19:36:23</p>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div style="color: #94a3b8; font-size: 0.85em;">TOTAL HOSTS</div>
+                <div class="metric-value color-hosts">1</div>
+            </div>
+            <div class="metric-card">
+                <div style="color: #94a3b8; font-size: 0.85em;">CRITICAL RISKS</div>
+                <div class="metric-value color-critical">2</div>
+            </div>
+            <div class="metric-card">
+                <div style="color: #94a3b8; font-size: 0.85em;">HIGH RISKS</div>
+                <div class="metric-value color-high">2</div>
+            </div>
+            <div class="metric-card">
+                <div style="color: #94a3b8; font-size: 0.85em;">MEDIUM / LOW</div>
+                <div class="metric-value color-medium">5</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input type="text" id="searchInput" onkeyup="filterResults()" placeholder="Search by port, service, or impact...">
+            <select id="severitySelect" onchange="filterResults()" style="width: 150px;">
+                <option value="ALL">All Severities</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+                <option value="INFO">Info</option>
+            </select>
+            <button class="btn-export" onclick="window.print()" style="background: #38bdf8; color: #0f172a; font-weight: bold; border: none; padding: 9px 16px; border-radius: 6px; cursor: pointer; white-space: nowrap;">
+                Export PDF
+            </button>
+        </div>
+
+        
+        <div class="host-card">
+            <div class="host-header">Host IP: 192.168.122.150 (Target System) - Status: up</div>
+            
+            <table class="scanTable">
+                <thead>
+                    <tr>
+                        <th style="width: 12%;">Port</th>
+                        <th style="width: 10%;">State</th>
+                        <th style="width: 15%;">Service</th>
+                        <th style="width: 20%;">Detected Version</th>
+                        <th style="width: 33%;">Security Risk / Student Insight</th>
+                        <th style="width: 10%;">Severity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                    <tr class="data-row" data-severity="CRITICAL">
+                        <td><strong>21/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>ftp</td>
+                        <td>vsftpd 2.3.4</td>
+                        <td>
+                            <div class="impact-tag">Backdoor Access</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">vsftpd 2.3.4 contains a famous backdoor. Typing a smiley face ':)' in the password grants instant root shell access.</div>
+                        </td>
+                        <td><span class="badge badge-CRITICAL">CRITICAL</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="MEDIUM">
+                        <td><strong>22/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>ssh</td>
+                        <td>OpenSSH 4.7p1 Debian 8ubuntu1</td>
+                        <td>
+                            <div class="impact-tag">Remote Shell</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">SSH is open for remote login. Secure, but vulnerable to password brute-force attacks if weak credentials are used.</div>
+                        </td>
+                        <td><span class="badge badge-MEDIUM">MEDIUM</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="HIGH">
+                        <td><strong>23/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>telnet</td>
+                        <td>Linux telnetd </td>
+                        <td>
+                            <div class="impact-tag">Cleartext Traffic</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">Telnet sends all usernames and passwords across the network in plain text without encryption.</div>
+                        </td>
+                        <td><span class="badge badge-HIGH">HIGH</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="INFO">
+                        <td><strong>25/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>smtp</td>
+                        <td>Postfix smtpd </td>
+                        <td>
+                            <div class="impact-tag">Mail Server</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">SMTP email service is running. Can be abused for email spoofing if misconfigured.</div>
+                        </td>
+                        <td><span class="badge badge-INFO">INFO</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="LOW">
+                        <td><strong>80/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>http</td>
+                        <td>Apache httpd 2.2.8</td>
+                        <td>
+                            <div class="impact-tag">Unencrypted Web</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">Standard web server running over HTTP (no SSL/HTTPS). Traffic can be intercepted on local Wi-Fi.</div>
+                        </td>
+                        <td><span class="badge badge-LOW">LOW</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="INFO">
+                        <td><strong>111/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>rpcbind</td>
+                        <td> 2</td>
+                        <td>
+                            <div class="impact-tag">Standard Port</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">Port 111 is open running rpcbind.</div>
+                        </td>
+                        <td><span class="badge badge-INFO">INFO</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="MEDIUM">
+                        <td><strong>139/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>netbios-ssn</td>
+                        <td>Samba smbd 3.X - 4.X</td>
+                        <td>
+                            <div class="impact-tag">File Sharing</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">NetBIOS/SMB legacy file sharing enabled. Exposes host details to network enumeration.</div>
+                        </td>
+                        <td><span class="badge badge-MEDIUM">MEDIUM</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="HIGH">
+                        <td><strong>445/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>netbios-ssn</td>
+                        <td>Samba smbd 3.X - 4.X</td>
+                        <td>
+                            <div class="impact-tag">SMB Exploit Risk</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">Windows/Samba file sharing open. Highly targeted protocol used by worms like WannaCry and EternalBlue.</div>
+                        </td>
+                        <td><span class="badge badge-HIGH">HIGH</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="CRITICAL">
+                        <td><strong>513/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>login</td>
+                        <td> </td>
+                        <td>
+                            <div class="impact-tag">No-Password Login</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">Legacy rlogin daemon allows remote users to log in directly without requiring a password.</div>
+                        </td>
+                        <td><span class="badge badge-CRITICAL">CRITICAL</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="INFO">
+                        <td><strong>514/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>shell</td>
+                        <td>Netkit rshd </td>
+                        <td>
+                            <div class="impact-tag">Standard Port</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">Port 514 is open running shell.</div>
+                        </td>
+                        <td><span class="badge badge-INFO">INFO</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="INFO">
+                        <td><strong>2049/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>nfs</td>
+                        <td> 2-4</td>
+                        <td>
+                            <div class="impact-tag">Standard Port</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">Port 2049 is open running nfs.</div>
+                        </td>
+                        <td><span class="badge badge-INFO">INFO</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="INFO">
+                        <td><strong>2121/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>ftp</td>
+                        <td>ProFTPD 1.3.1</td>
+                        <td>
+                            <div class="impact-tag">Standard Port</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">Port 2121 is open running ftp.</div>
+                        </td>
+                        <td><span class="badge badge-INFO">INFO</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="LOW">
+                        <td><strong>3306/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>mysql</td>
+                        <td>MySQL 5.0.51a-3ubuntu5</td>
+                        <td>
+                            <div class="impact-tag">Exposed Database</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">MySQL database server is directly accessible from the network instead of local-only.</div>
+                        </td>
+                        <td><span class="badge badge-LOW">LOW</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="INFO">
+                        <td><strong>5432/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>postgresql</td>
+                        <td>PostgreSQL DB 8.3.0 - 8.3.7</td>
+                        <td>
+                            <div class="impact-tag">Standard Port</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">Port 5432 is open running postgresql.</div>
+                        </td>
+                        <td><span class="badge badge-INFO">INFO</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="MEDIUM">
+                        <td><strong>5900/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>vnc</td>
+                        <td>VNC </td>
+                        <td>
+                            <div class="impact-tag">Remote Desktop</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">VNC graphical desktop sharing active. Allows remote screen control if weak passwords are set.</div>
+                        </td>
+                        <td><span class="badge badge-MEDIUM">MEDIUM</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="INFO">
+                        <td><strong>6000/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>X11</td>
+                        <td> </td>
+                        <td>
+                            <div class="impact-tag">Standard Port</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">Port 6000 is open running X11.</div>
+                        </td>
+                        <td><span class="badge badge-INFO">INFO</span></td>
+                    </tr>
+                    
+                    <tr class="data-row" data-severity="INFO">
+                        <td><strong>8009/tcp</strong></td>
+                        <td><span style="color: #4ade80;">open</span></td>
+                        <td>ajp13</td>
+                        <td>Apache Jserv </td>
+                        <td>
+                            <div class="impact-tag">Standard Port</div>
+                            <div style="font-size: 0.88em; color: #cbd5e1; margin-top: 2px;">Port 8009 is open running ajp13.</div>
+                        </td>
+                        <td><span class="badge badge-INFO">INFO</span></td>
+                    </tr>
+                    
+                </tbody>
+            </table>
+            
+        </div>
+        
+    </div>
+
+    <script>
+        function filterResults() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const selectedSeverity = document.getElementById('severitySelect').value;
+            const rows = document.querySelectorAll('.data-row');
+
+            rows.forEach(row => {
+                const textContent = row.textContent.toLowerCase();
+                const rowSeverity = row.getAttribute('data-severity');
+
+                const matchesSearch = textContent.includes(searchInput);
+                const matchesSeverity = (selectedSeverity === 'ALL') || (rowSeverity === selectedSeverity);
+
+                if (matchesSearch && matchesSeverity) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
