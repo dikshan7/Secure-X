@@ -11,7 +11,15 @@ python app.py
 ```
 
 Open http://127.0.0.1:5000, enter an IP address or range, and select **Scan Target**.
-The generated report opens at `/report` and is also saved as `vulnerability_report.html`.
+The generated report opens in the response from the scan form.
+
+## Deploy on Vercel
+
+Import this repository into Vercel with the project root set to this folder.
+Vercel will use `vercel.json` and install the Python packages from
+`requirements.txt`. Vercel does not include the system `nmap` executable, so
+the app automatically uses a small TCP check there and returns the report
+directly instead of writing a file to the deployment filesystem.
 
 ## Where to integrate your program
 

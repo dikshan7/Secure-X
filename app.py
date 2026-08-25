@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, send_file, url_for
+from flask import Flask, render_template, request, redirect, url_for
 
 app = Flask(__name__)
 
@@ -21,10 +21,8 @@ app = Flask(__name__)
 
 
 #!/usr/bin/env python3
-import os
 import sys
 import datetime
-import nmap
 from jinja2 import Template
 
 SERVICE_EXPLANATIONS = {
@@ -234,10 +232,18 @@ HTML_TEMPLATE = """
 """
 
 def run_assessment(target_range):
-    scanner = nmap.PortScanner()
+    try:
+        import nmap
+    except ImportError:
+        return run_socket_fallback(target_range)
+
     print(f"[*] Scanning {target_range} (Fast scan mode)...")
 
-    scanner.scan(hosts=target_range, arguments='-sV -F')
+    try:
+        scanner = nmap.PortScanner()
+        scanner.scan(hosts=target_range, arguments='-sV -F')
+    except (nmap.PortScannerError, FileNotFoundError, OSError):
+        return run_socket_fallback(target_range)
     
     parsed_hosts = []
     
@@ -277,6 +283,48 @@ def run_assessment(target_range):
         
     return parsed_hosts
 
+
+def run_socket_fallback(target):
+    """Run a small TCP check when the host does not provide the nmap binary."""
+    import socket
+
+    common_ports = [21, 22, 23, 25, 80, 139, 443, 445, 513, 3306, 5900, 8080]
+    host = target.split('/', 1)[0]
+    open_ports = []
+
+    for port in common_ports:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as connection:
+            connection.settimeout(0.35)
+            try:
+                if connection.connect_ex((host, port)) == 0:
+                    info = SERVICE_EXPLANATIONS.get(port, {
+                        "severity": "INFO",
+                        "impact": "Standard Port",
+                        "desc": f"Port {port} is open."
+                    })
+                    try:
+                        service = socket.getservbyport(port, "tcp")
+                    except OSError:
+                        service = "unknown"
+                    open_ports.append({
+                        "port": port,
+                        "proto": "tcp",
+                        "state": "open",
+                        "service": service,
+                        "product": "",
+                        "version": "",
+                        **info,
+                    })
+            except socket.gaierror as error:
+                raise ValueError(f"Invalid target '{target}': {error}") from error
+
+    return [{
+        "ip": host,
+        "hostname": "",
+        "status": "up",
+        "ports": open_ports,
+    }]
+
 def generate_report(target_range, results):
     stats = {
         "total_hosts": len(results),
@@ -303,11 +351,7 @@ def generate_report(target_range, results):
         stats=stats
     )
     
-    output_filename = os.path.join(app.root_path, "vulnerability_report.html")
-    with open(output_filename, "w") as f:
-        f.write(rendered_html)
-    print(f"[+] Clean report generated: {output_filename}")
-    return output_filename
+    return rendered_html
 
 if __name__ == "__main__":
     if len(sys.argv) >= 2:
@@ -332,9 +376,8 @@ def run_script():
     target = request.form.get('user_data', '').strip()
     try:
         scan_results = run_assessment(target)
-        generate_report(target, scan_results)
-        return redirect(url_for('report'))
-    except (nmap.PortScannerError, OSError, ValueError) as error:
+        return generate_report(target, scan_results)
+    except (OSError, ValueError, ImportError) as error:
         return render_template(
             'index.html',
             output=f'Unable to scan {target}: {error}',
@@ -344,10 +387,7 @@ def run_script():
 
 @app.route('/report')
 def report():
-    report_path = os.path.join(app.root_path, 'vulnerability_report.html')
-    if not os.path.exists(report_path):
-        return redirect(url_for('home'))
-    return send_file(report_path)
+    return redirect(url_for('home'))
 
 
 if __name__ == '__main__':
