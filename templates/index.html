@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Secure X | Network Security</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="shell">
+        <header class="brand-bar">
+            <a class="brand" href="{{ url_for('home') }}" aria-label="Secure X home">
+                <span class="brand-mark">X</span>
+                <span>SECURE X</span>
+            </a>
+            <span class="status"><span class="status-dot"></span> SYSTEM READY</span>
+        </header>
+
+        <section class="hero">
+            <p class="eyebrow">NETWORK INTELLIGENCE / 01</p>
+            <h1>See what is<br><em>exposed.</em></h1>
+            <p class="subtitle">Run a focused vulnerability assessment and turn your target into a clear, actionable security report.</p>
+
+            <form action="{{ url_for('run_script') }}" method="POST" onsubmit="startScan(this)">
+                <label for="target">Target address</label>
+                <div class="scan-form">
+                    <input
+                        id="target"
+                        type="text"
+                        name="user_data"
+                        placeholder="127.0.0.1 or 192.168.1.0/24"
+                        value="{{ previous_input or '' }}"
+                        required
+                    >
+                    <button id="scanButton" type="submit">Scan target <span aria-hidden="true">&#8594;</span></button>
+                </div>
+                <p class="scan-note" id="scanStatus">Fast scan with service version detection. This may take a few seconds.</p>
+            </form>
+
+            {% if output %}
+            <div class="result" role="alert">
+                <strong>Scan unavailable</strong>
+                <p>{{ output }}</p>
+            </div>
+            {% endif %}
+        </section>
+
+        <footer class="footer">
+            <span>FAST SCAN / SERVICE VERSION DETECTION</span>
+            <span>SECURE X <span class="footer-slash">/</span> 2026</span>
+        </footer>
+    </main>
+    <script>
+        function startScan(form) {
+            const button = form.querySelector('#scanButton');
+            const status = form.querySelector('#scanStatus');
+            button.disabled = true;
+            button.innerHTML = 'Scanning... <span aria-hidden="true">&#8987;</span>';
+            status.textContent = 'Secure X is checking the target. Keep this window open.';
+        }
+    </script>
+</body>
+</html>
